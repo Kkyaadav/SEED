@@ -7,7 +7,7 @@ const transporter = nodemailer.createTransport(
         port:465,
         auth:{
             user:'kkyaadav786@gmail.com',
-            pass:'edztvxqbhsaissxd'
+            pass:'your pass'
         }
     }
 );
