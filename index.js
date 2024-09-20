@@ -80,66 +80,6 @@ app.post('/login', (req, res) => {
     });
 });
 
-// Forgot Password - Send Reset Link
-app.post('/forgot-password', (req, res) => {
-    const { email } = req.body;
-
-    const checkQuery = 'SELECT * FROM user WHERE email = ?';
-    db.query(checkQuery, [email], (err, results) => {
-        if (err) return res.status(500).send('Database error');
-
-        if (results.length === 0) {
-            return res.status(404).send('No user found with that email');
-        }
-
-        const user = results[0];
-
-        const resetToken = jwt.sign({ id: user.id }, process.env.JWT_SECRET, { expiresIn: '10m' });
-        console.log(`Generated Token: ${resetToken}`);  //just to print the token
-
-        const updateQuery = 'UPDATE user SET reset_token = ? WHERE email = ?';
-        db.query(updateQuery, [resetToken, email], (err) => {
-            if (err) return res.status(500).send('Database error');
-
-            const resetLink = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
-
-            forgotPasswordMail(email, user.first_name, resetLink);
-            res.send('Password reset link has been sent to your email');
-        });
-    });
-});
-
-// Reset Password
-app.post('/reset-password', (req, res) => {
-    const { token, newPassword } = req.body;
-
-    try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
-        const checkQuery = 'SELECT * FROM user WHERE id = ?';
-        db.query(checkQuery, [decoded.id], (err, results) => {
-            if (err) return res.status(500).send('Database error');
-
-            if (results.length === 0) {
-                return res.status(400).send('Invalid or expired token');
-            }
-
-            const user = results[0];
-
-            bcrypt.hash(newPassword, salt, (err, hash) => {
-                if (err) return res.status(500).send('Error hashing the password');
-
-                const updateQuery = 'UPDATE user SET password = ?, reset_token = NULL WHERE id = ?';
-                db.query(updateQuery, [hash, user.id], (err) => {
-                    if (err) return res.status(500).send('Database error');
-                    res.send('Password reset successful');
-                });
-            });
-        });
-    } catch (err) {
-        res.status(400).send('Invalid or expired token');
-    }
-});
 
 // Start Server
 const PORT = process.env.PORT || 3000;
